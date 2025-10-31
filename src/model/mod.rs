@@ -2,6 +2,10 @@
 //!
 //! Implements an encoder-decoder transformer tailored for WGSL token sequences.
 
+pub mod attention;
+pub mod decoder;
+pub mod encoder;
+
 use crate::config::ModelConfig;
 use crate::tokenizer::SpecialToken;
 use ndarray::{s, Array1, Array2};
