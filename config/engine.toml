@@ -1,0 +1,29 @@
+# Engine Configuration for Tiny Agent Trainer
+# Production configuration for logging, debugging, and output paths
+
+# Global logging level
+# Valid values: DEBUG, INFO, WARN, ERROR
+#
+# - DEBUG: Verbose logging for development and troubleshooting
+# - INFO: Standard operational logging (recommended for production)
+# - WARN: Only warnings and errors
+# - ERROR: Only error messages
+log_level = "INFO"
+
+# Disable debug assertions in production
+# Set to true to disable all debug assertions and reduce overhead
+# Recommended: false for development, true for production
+disable_debug_assertions = false
+
+[paths]
+# Log file output directory
+# All application logs will be written here for Git-based auditing
+log_path = "logs/"
+
+# Journal file output directory
+# Training journals and experiment logs will be stored here
+journal_path = "journals/"
+
+# Checkpoint file output directory
+# Model checkpoints and saved states will be stored here
+checkpoint_path = "checkpoints/"

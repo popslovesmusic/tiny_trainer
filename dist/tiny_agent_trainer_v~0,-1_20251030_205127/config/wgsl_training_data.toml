@@ -1,0 +1,706 @@
+# WGSL Training Dataset
+# Natural Language -> WGSL Code pairs for training the model
+# Format: Each entry is [natural_language, wgsl_code]
+
+[[examples]]
+natural_language = "Create a simple red color"
+wgsl_code = "vec4<f32>(1.0, 0.0, 0.0, 1.0)"
+
+[[examples]]
+natural_language = "Create a green color"
+wgsl_code = "vec4<f32>(0.0, 1.0, 0.0, 1.0)"
+
+[[examples]]
+natural_language = "Create a blue color"
+wgsl_code = "vec4<f32>(0.0, 0.0, 1.0, 1.0)"
+
+[[examples]]
+natural_language = "Create a white color"
+wgsl_code = "vec4<f32>(1.0, 1.0, 1.0, 1.0)"
+
+[[examples]]
+natural_language = "Create a black color"
+wgsl_code = "vec4<f32>(0.0, 0.0, 0.0, 1.0)"
+
+[[examples]]
+natural_language = "Create a yellow color"
+wgsl_code = "vec4<f32>(1.0, 1.0, 0.0, 1.0)"
+
+[[examples]]
+natural_language = "Create a cyan color"
+wgsl_code = "vec4<f32>(0.0, 1.0, 1.0, 1.0)"
+
+[[examples]]
+natural_language = "Create a magenta color"
+wgsl_code = "vec4<f32>(1.0, 0.0, 1.0, 1.0)"
+
+[[examples]]
+natural_language = "Create a semi-transparent red"
+wgsl_code = "vec4<f32>(1.0, 0.0, 0.0, 0.5)"
+
+[[examples]]
+natural_language = "Normalize a vector"
+wgsl_code = "normalize(vec3<f32>(x, y, z))"
+
+[[examples]]
+natural_language = "Calculate dot product of two vectors"
+wgsl_code = "dot(vec3<f32>(a), vec3<f32>(b))"
+
+[[examples]]
+natural_language = "Calculate cross product"
+wgsl_code = "cross(vec3<f32>(a), vec3<f32>(b))"
+
+[[examples]]
+natural_language = "Clamp value between 0 and 1"
+wgsl_code = "clamp(value, 0.0, 1.0)"
+
+[[examples]]
+natural_language = "Linear interpolation between two values"
+wgsl_code = "mix(a, b, t)"
+
+[[examples]]
+natural_language = "Get length of a vector"
+wgsl_code = "length(vec3<f32>(x, y, z))"
+
+# Chromatic Operations
+[[examples]]
+natural_language = "Mix two colors additively"
+wgsl_code = """let mixed = normalize(color_a.rgb + color_b.rgb);
+let certainty = (color_a.w + color_b.w) * 0.5;
+vec4<f32>(mixed, certainty)"""
+
+[[examples]]
+natural_language = "Filter color subtractively"
+wgsl_code = "clamp(color_a.rgb - color_b.rgb, vec3<f32>(0.0), vec3<f32>(1.0))"
+
+[[examples]]
+natural_language = "Calculate color complement"
+wgsl_code = "vec3<f32>(color.r, 1.0 - color.g, 1.0 - color.b)"
+
+[[examples]]
+natural_language = "Saturate color by alpha"
+wgsl_code = """let mean = (color.r + color.g + color.b) / 3.0;
+let saturated = mean + alpha * (color.rgb - vec3<f32>(mean));
+clamp(saturated, vec3<f32>(0.0), vec3<f32>(1.0))"""
+
+[[examples]]
+natural_language = "Convert RGB to grayscale"
+wgsl_code = """let gray = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
+vec3<f32>(gray, gray, gray)"""
+
+# Fragment Shader Basics
+[[examples]]
+natural_language = "Simple red fragment shader"
+wgsl_code = """@fragment
+fn main() -> @location(0) vec4<f32> {
+    return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+}"""
+
+[[examples]]
+natural_language = "Fragment shader with UV coordinates"
+wgsl_code = """@fragment
+fn main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+    return vec4<f32>(uv.x, uv.y, 0.0, 1.0);
+}"""
+
+[[examples]]
+natural_language = "Fragment shader with checkerboard pattern"
+wgsl_code = """@fragment
+fn main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+    let checker = step(0.5, fract(uv.x * 8.0)) * step(0.5, fract(uv.y * 8.0));
+    return vec4<f32>(vec3<f32>(checker), 1.0);
+}"""
+
+[[examples]]
+natural_language = "Fragment shader with circle"
+wgsl_code = """@fragment
+fn main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+    let center = vec2<f32>(0.5, 0.5);
+    let dist = length(uv - center);
+    let circle = step(dist, 0.3);
+    return vec4<f32>(vec3<f32>(circle), 1.0);
+}"""
+
+# Compute Shader Basics
+[[examples]]
+natural_language = "Simple compute shader"
+wgsl_code = """@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+    // Compute work here
+}"""
+
+[[examples]]
+natural_language = "Compute shader with buffer access"
+wgsl_code = """@group(0) @binding(0) var<storage, read> input: array<f32>;
+@group(0) @binding(1) var<storage, read_write> output: array<f32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+    let idx = id.x;
+    output[idx] = input[idx] * 2.0;
+}"""
+
+[[examples]]
+natural_language = "Compute shader for vector addition"
+wgsl_code = """@group(0) @binding(0) var<storage, read> a: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> b: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read_write> result: array<vec4<f32>>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+    let idx = id.x;
+    result[idx] = a[idx] + b[idx];
+}"""
+
+[[examples]]
+natural_language = "Compute shader for image processing"
+wgsl_code = """@group(0) @binding(0) var input_texture: texture_2d<f32>;
+@group(0) @binding(1) var output_texture: texture_storage_2d<rgba8unorm, write>;
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+    let color = textureLoad(input_texture, vec2<i32>(id.xy), 0);
+    textureStore(output_texture, vec2<i32>(id.xy), color);
+}"""
+
+# Struct Definitions
+[[examples]]
+natural_language = "Define a vertex structure"
+wgsl_code = """struct Vertex {
+    @location(0) position: vec3<f32>,
+    @location(1) color: vec3<f32>,
+}"""
+
+[[examples]]
+natural_language = "Define a uniform structure"
+wgsl_code = """struct Uniforms {
+    view_proj: mat4x4<f32>,
+    time: f32,
+}"""
+
+[[examples]]
+natural_language = "Define a vertex output structure"
+wgsl_code = """struct VertexOutput {
+    @builtin(position) position: vec4<f32>,
+    @location(0) color: vec3<f32>,
+    @location(1) uv: vec2<f32>,
+}"""
+
+# Vertex Shaders
+[[examples]]
+natural_language = "Simple vertex shader"
+wgsl_code = """@vertex
+fn main(@location(0) position: vec3<f32>) -> @builtin(position) vec4<f32> {
+    return vec4<f32>(position, 1.0);
+}"""
+
+[[examples]]
+natural_language = "Vertex shader with transformation matrix"
+wgsl_code = """@group(0) @binding(0) var<uniform> transform: mat4x4<f32>;
+
+@vertex
+fn main(@location(0) position: vec3<f32>) -> @builtin(position) vec4<f32> {
+    return transform * vec4<f32>(position, 1.0);
+}"""
+
+[[examples]]
+natural_language = "Vertex shader passing color to fragment"
+wgsl_code = """struct VertexOutput {
+    @builtin(position) position: vec4<f32>,
+    @location(0) color: vec3<f32>,
+}
+
+@vertex
+fn main(
+    @location(0) position: vec3<f32>,
+    @location(1) color: vec3<f32>
+) -> VertexOutput {
+    var output: VertexOutput;
+    output.position = vec4<f32>(position, 1.0);
+    output.color = color;
+    return output;
+}"""
+
+# Texture Operations
+[[examples]]
+natural_language = "Sample a texture"
+wgsl_code = """@group(0) @binding(0) var my_texture: texture_2d<f32>;
+@group(0) @binding(1) var my_sampler: sampler;
+
+@fragment
+fn main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+    return textureSample(my_texture, my_sampler, uv);
+}"""
+
+[[examples]]
+natural_language = "Sample texture with offset"
+wgsl_code = "textureSampleLevel(tex, samp, uv, 0.0, vec2<i32>(1, 0))"
+
+[[examples]]
+natural_language = "Load texture at coordinates"
+wgsl_code = "textureLoad(tex, vec2<i32>(x, y), 0)"
+
+[[examples]]
+natural_language = "Get texture dimensions"
+wgsl_code = "textureDimensions(tex)"
+
+[[examples]]
+natural_language = "Write to storage texture"
+wgsl_code = "textureStore(output_tex, vec2<i32>(x, y), color)"
+
+# Math Operations
+[[examples]]
+natural_language = "Calculate sine of angle"
+wgsl_code = "sin(angle)"
+
+[[examples]]
+natural_language = "Calculate cosine of angle"
+wgsl_code = "cos(angle)"
+
+[[examples]]
+natural_language = "Calculate power"
+wgsl_code = "pow(base, exponent)"
+
+[[examples]]
+natural_language = "Calculate square root"
+wgsl_code = "sqrt(value)"
+
+[[examples]]
+natural_language = "Calculate exponential"
+wgsl_code = "exp(value)"
+
+[[examples]]
+natural_language = "Calculate logarithm"
+wgsl_code = "log(value)"
+
+[[examples]]
+natural_language = "Get absolute value"
+wgsl_code = "abs(value)"
+
+[[examples]]
+natural_language = "Get sign of value"
+wgsl_code = "sign(value)"
+
+[[examples]]
+natural_language = "Round to nearest integer"
+wgsl_code = "round(value)"
+
+[[examples]]
+natural_language = "Round down"
+wgsl_code = "floor(value)"
+
+[[examples]]
+natural_language = "Round up"
+wgsl_code = "ceil(value)"
+
+[[examples]]
+natural_language = "Get fractional part"
+wgsl_code = "fract(value)"
+
+[[examples]]
+natural_language = "Get minimum of two values"
+wgsl_code = "min(a, b)"
+
+[[examples]]
+natural_language = "Get maximum of two values"
+wgsl_code = "max(a, b)"
+
+[[examples]]
+natural_language = "Smooth step interpolation"
+wgsl_code = "smoothstep(edge0, edge1, x)"
+
+[[examples]]
+natural_language = "Step function"
+wgsl_code = "step(edge, x)"
+
+# Matrix Operations
+[[examples]]
+natural_language = "Create identity matrix"
+wgsl_code = """mat4x4<f32>(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0
+)"""
+
+[[examples]]
+natural_language = "Multiply matrix by vector"
+wgsl_code = "matrix * vec4<f32>(x, y, z, w)"
+
+[[examples]]
+natural_language = "Transpose matrix"
+wgsl_code = "transpose(matrix)"
+
+# Atomic Operations
+[[examples]]
+natural_language = "Atomic add operation"
+wgsl_code = "atomicAdd(&counter, 1u)"
+
+[[examples]]
+natural_language = "Atomic compare and exchange"
+wgsl_code = "atomicCompareExchangeWeak(&value, old, new)"
+
+[[examples]]
+natural_language = "Atomic load"
+wgsl_code = "atomicLoad(&value)"
+
+[[examples]]
+natural_language = "Atomic store"
+wgsl_code = "atomicStore(&value, new_value)"
+
+# Advanced Chromatic Operations
+[[examples]]
+natural_language = "Chromatic mix compute shader"
+wgsl_code = """@group(0) @binding(0) var<storage, read> tensor_a: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> tensor_b: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read_write> output: array<vec4<f32>>;
+
+@compute @workgroup_size(8, 8, 1)
+fn chromatic_mix(@builtin(global_invocation_id) id: vec3<u32>) {
+    let idx = id.x + id.y * 8u;
+    let a = tensor_a[idx];
+    let b = tensor_b[idx];
+    let mixed = normalize(a.rgb + b.rgb);
+    let certainty = (a.w + b.w) * 0.5;
+    output[idx] = vec4<f32>(mixed, certainty);
+}"""
+
+[[examples]]
+natural_language = "Chromatic filter compute shader"
+wgsl_code = """@group(0) @binding(0) var<storage, read> tensor_a: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read> tensor_b: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read_write> output: array<vec4<f32>>;
+
+@compute @workgroup_size(8, 8, 1)
+fn chromatic_filter(@builtin(global_invocation_id) id: vec3<u32>) {
+    let idx = id.x + id.y * 8u;
+    let a = tensor_a[idx];
+    let b = tensor_b[idx];
+    let filtered = clamp(a.rgb - b.rgb, vec3<f32>(0.0), vec3<f32>(1.0));
+    output[idx] = vec4<f32>(filtered, a.w);
+}"""
+
+[[examples]]
+natural_language = "Chromatic complement shader"
+wgsl_code = """@group(0) @binding(0) var<storage, read> tensor: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read_write> output: array<vec4<f32>>;
+
+@compute @workgroup_size(8, 8, 1)
+fn chromatic_complement(@builtin(global_invocation_id) id: vec3<u32>) {
+    let idx = id.x + id.y * 8u;
+    let color = tensor[idx];
+    let complement = vec3<f32>(color.r, 1.0 - color.g, 1.0 - color.b);
+    output[idx] = vec4<f32>(complement, color.w);
+}"""
+
+[[examples]]
+natural_language = "Chromatic saturate shader"
+wgsl_code = """@group(0) @binding(0) var<storage, read> tensor: array<vec4<f32>>;
+@group(0) @binding(1) var<storage, read_write> output: array<vec4<f32>>;
+@group(0) @binding(2) var<uniform> alpha: f32;
+
+@compute @workgroup_size(8, 8, 1)
+fn chromatic_saturate(@builtin(global_invocation_id) id: vec3<u32>) {
+    let idx = id.x + id.y * 8u;
+    let color = tensor[idx];
+    let mean = (color.r + color.g + color.b) / 3.0;
+    let saturated = mean + alpha * (color.rgb - vec3<f32>(mean));
+    output[idx] = vec4<f32>(clamp(saturated, vec3<f32>(0.0), vec3<f32>(1.0)), color.w);
+}"""
+
+# Color Space Conversions
+[[examples]]
+natural_language = "Convert RGB to HSV"
+wgsl_code = """fn rgb_to_hsv(rgb: vec3<f32>) -> vec3<f32> {
+    let max_val = max(max(rgb.r, rgb.g), rgb.b);
+    let min_val = min(min(rgb.r, rgb.g), rgb.b);
+    let delta = max_val - min_val;
+
+    var h: f32 = 0.0;
+    if (delta > 0.0) {
+        if (max_val == rgb.r) {
+            h = ((rgb.g - rgb.b) / delta) % 6.0;
+        } else if (max_val == rgb.g) {
+            h = ((rgb.b - rgb.r) / delta) + 2.0;
+        } else {
+            h = ((rgb.r - rgb.g) / delta) + 4.0;
+        }
+        h = h / 6.0;
+    }
+
+    let s = select(0.0, delta / max_val, max_val > 0.0);
+    let v = max_val;
+
+    return vec3<f32>(h, s, v);
+}"""
+
+[[examples]]
+natural_language = "Convert HSV to RGB"
+wgsl_code = """fn hsv_to_rgb(hsv: vec3<f32>) -> vec3<f32> {
+    let c = hsv.z * hsv.y;
+    let x = c * (1.0 - abs((hsv.x * 6.0) % 2.0 - 1.0));
+    let m = hsv.z - c;
+
+    var rgb: vec3<f32>;
+    if (hsv.x < 1.0 / 6.0) {
+        rgb = vec3<f32>(c, x, 0.0);
+    } else if (hsv.x < 2.0 / 6.0) {
+        rgb = vec3<f32>(x, c, 0.0);
+    } else if (hsv.x < 3.0 / 6.0) {
+        rgb = vec3<f32>(0.0, c, x);
+    } else if (hsv.x < 4.0 / 6.0) {
+        rgb = vec3<f32>(0.0, x, c);
+    } else if (hsv.x < 5.0 / 6.0) {
+        rgb = vec3<f32>(x, 0.0, c);
+    } else {
+        rgb = vec3<f32>(c, 0.0, x);
+    }
+
+    return rgb + vec3<f32>(m);
+}"""
+
+# Lighting Calculations
+[[examples]]
+natural_language = "Calculate diffuse lighting"
+wgsl_code = """let diffuse = max(dot(normal, light_dir), 0.0);
+let color = diffuse * light_color * surface_color;"""
+
+[[examples]]
+natural_language = "Calculate specular lighting"
+wgsl_code = """let reflect_dir = reflect(-light_dir, normal);
+let spec = pow(max(dot(view_dir, reflect_dir), 0.0), shininess);
+let specular = spec * light_color;"""
+
+[[examples]]
+natural_language = "Phong lighting model"
+wgsl_code = """fn phong_lighting(
+    normal: vec3<f32>,
+    light_dir: vec3<f32>,
+    view_dir: vec3<f32>,
+    light_color: vec3<f32>,
+    surface_color: vec3<f32>,
+    shininess: f32
+) -> vec3<f32> {
+    // Ambient
+    let ambient = 0.1 * surface_color;
+
+    // Diffuse
+    let diff = max(dot(normal, light_dir), 0.0);
+    let diffuse = diff * light_color * surface_color;
+
+    // Specular
+    let reflect_dir = reflect(-light_dir, normal);
+    let spec = pow(max(dot(view_dir, reflect_dir), 0.0), shininess);
+    let specular = spec * light_color;
+
+    return ambient + diffuse + specular;
+}"""
+
+# Noise Functions
+[[examples]]
+natural_language = "Simple hash function"
+wgsl_code = """fn hash(p: vec2<f32>) -> f32 {
+    var h = dot(p, vec2<f32>(127.1, 311.7));
+    return fract(sin(h) * 43758.5453123);
+}"""
+
+[[examples]]
+natural_language = "2D Perlin-like noise"
+wgsl_code = """fn noise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+
+    let a = hash(i);
+    let b = hash(i + vec2<f32>(1.0, 0.0));
+    let c = hash(i + vec2<f32>(0.0, 1.0));
+    let d = hash(i + vec2<f32>(1.0, 1.0));
+
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}"""
+
+# Workgroup Memory
+[[examples]]
+natural_language = "Use workgroup shared memory"
+wgsl_code = """var<workgroup> shared_data: array<f32, 256>;
+
+@compute @workgroup_size(256)
+fn main(
+    @builtin(global_invocation_id) global_id: vec3<u32>,
+    @builtin(local_invocation_id) local_id: vec3<u32>
+) {
+    let idx = local_id.x;
+    shared_data[idx] = f32(global_id.x);
+    workgroupBarrier();
+    // Use shared_data...
+}"""
+
+# Control Flow
+[[examples]]
+natural_language = "If-else statement"
+wgsl_code = """if (condition) {
+    // true branch
+} else {
+    // false branch
+}"""
+
+[[examples]]
+natural_language = "For loop"
+wgsl_code = """for (var i = 0u; i < count; i = i + 1u) {
+    // loop body
+}"""
+
+[[examples]]
+natural_language = "While loop"
+wgsl_code = """while (condition) {
+    // loop body
+}"""
+
+[[examples]]
+natural_language = "Switch statement"
+wgsl_code = """switch (value) {
+    case 0: {
+        // case 0
+    }
+    case 1: {
+        // case 1
+    }
+    default: {
+        // default case
+    }
+}"""
+
+# Complex Examples
+[[examples]]
+natural_language = "Gaussian blur compute shader"
+wgsl_code = """@group(0) @binding(0) var input_tex: texture_2d<f32>;
+@group(0) @binding(1) var output_tex: texture_storage_2d<rgba8unorm, write>;
+
+@compute @workgroup_size(8, 8, 1)
+fn gaussian_blur(@builtin(global_invocation_id) id: vec3<u32>) {
+    let coords = vec2<i32>(id.xy);
+
+    var sum = vec4<f32>(0.0);
+    var weight_sum = 0.0;
+
+    for (var y = -2; y <= 2; y = y + 1) {
+        for (var x = -2; x <= 2; x = x + 1) {
+            let offset = vec2<i32>(x, y);
+            let sample_coords = coords + offset;
+            let sample = textureLoad(input_tex, sample_coords, 0);
+
+            let weight = exp(-f32(x * x + y * y) / 2.0);
+            sum = sum + sample * weight;
+            weight_sum = weight_sum + weight;
+        }
+    }
+
+    let result = sum / weight_sum;
+    textureStore(output_tex, coords, result);
+}"""
+
+[[examples]]
+natural_language = "Ray-sphere intersection"
+wgsl_code = """fn ray_sphere_intersect(
+    ray_origin: vec3<f32>,
+    ray_dir: vec3<f32>,
+    sphere_center: vec3<f32>,
+    sphere_radius: f32
+) -> f32 {
+    let oc = ray_origin - sphere_center;
+    let a = dot(ray_dir, ray_dir);
+    let b = 2.0 * dot(oc, ray_dir);
+    let c = dot(oc, oc) - sphere_radius * sphere_radius;
+    let discriminant = b * b - 4.0 * a * c;
+
+    if (discriminant < 0.0) {
+        return -1.0;
+    }
+
+    return (-b - sqrt(discriminant)) / (2.0 * a);
+}"""
+
+[[examples]]
+natural_language = "Chromatic spiral visualization"
+wgsl_code = """@group(0) @binding(0) var<uniform> coherence_score: f32;
+@group(0) @binding(1) var<uniform> center: vec2<f32>;
+
+@fragment
+fn chromatic_spiral(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
+    let delta = uv - center;
+    let radius = length(delta);
+    let angle = atan2(delta.y, delta.x);
+
+    let spiral = sin(12.0 * radius + angle);
+    let intensity = mix(0.1, 1.0, coherence_score);
+    let chroma = 0.5 + 0.5 * spiral * intensity;
+
+    let red = clamp(chroma, 0.0, 1.0);
+    let green = clamp(1.0 - abs(chroma - 0.5) * 2.0, 0.0, 1.0);
+    let blue = clamp(1.0 - chroma, 0.0, 1.0);
+
+    return vec4<f32>(red, green, blue, 1.0);
+}"""
+
+[[examples]]
+natural_language = "FFT butterfly operation"
+wgsl_code = """@group(0) @binding(0) var<storage, read_write> data: array<vec2<f32>>;
+@group(0) @binding(1) var<uniform> params: FFTParams;
+
+@compute @workgroup_size(256)
+fn fft_butterfly(@builtin(global_invocation_id) id: vec3<u32>) {
+    let idx = id.x;
+    let stride = params.stride;
+    let twiddle_stride = params.twiddle_stride;
+
+    let k = idx / stride;
+    let j = idx % stride;
+
+    let twiddle_idx = k * twiddle_stride;
+    let angle = -2.0 * 3.14159265359 * f32(twiddle_idx) / f32(params.n);
+    let twiddle = vec2<f32>(cos(angle), sin(angle));
+
+    let idx0 = 2 * stride * k + j;
+    let idx1 = idx0 + stride;
+
+    let a = data[idx0];
+    let b = data[idx1];
+
+    // Complex multiplication: b * twiddle
+    let b_twiddle = vec2<f32>(
+        b.x * twiddle.x - b.y * twiddle.y,
+        b.x * twiddle.y + b.y * twiddle.x
+    );
+
+    data[idx0] = a + b_twiddle;
+    data[idx1] = a - b_twiddle;
+}"""
+
+# Utility Functions
+[[examples]]
+natural_language = "Remap value from one range to another"
+wgsl_code = """fn remap(value: f32, old_min: f32, old_max: f32, new_min: f32, new_max: f32) -> f32 {
+    let t = (value - old_min) / (old_max - old_min);
+    return mix(new_min, new_max, t);
+}"""
+
+[[examples]]
+natural_language = "Rotate 2D vector"
+wgsl_code = """fn rotate_2d(v: vec2<f32>, angle: f32) -> vec2<f32> {
+    let cos_a = cos(angle);
+    let sin_a = sin(angle);
+    return vec2<f32>(
+        v.x * cos_a - v.y * sin_a,
+        v.x * sin_a + v.y * cos_a
+    );
+}"""
+
+[[examples]]
+natural_language = "Calculate distance from point to line"
+wgsl_code = """fn point_to_line_distance(point: vec2<f32>, line_start: vec2<f32>, line_end: vec2<f32>) -> f32 {
+    let line = line_end - line_start;
+    let point_to_start = point - line_start;
+    let t = clamp(dot(point_to_start, line) / dot(line, line), 0.0, 1.0);
+    let projection = line_start + t * line;
+    return length(point - projection);
+}"""

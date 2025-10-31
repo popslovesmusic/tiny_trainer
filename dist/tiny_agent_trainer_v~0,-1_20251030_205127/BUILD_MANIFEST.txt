@@ -1,0 +1,40 @@
+========================================
+Tiny Agent Trainer - Build Manifest
+========================================
+
+Build Information:
+  Version:        ~0,-1
+  Target:         x86_64-pc-windows-msvc
+  Build Date:     2025-10-30 20:49:05 UTC
+  Git Commit:     069baa4
+  Rust Version:   rustc 1.89.0 (29483883e 2025-08-04)
+  Cargo Version:  cargo 1.89.0 (c24e10642 2025-06-23)
+
+Binary Information:
+  Name:           tiny-agent-trainer.exe
+  Size:           8 MB (8841728 bytes)
+  Path:           target\release\tiny-agent-trainer.exe
+
+Build Configuration:
+  Optimization:   opt-level = 3
+  LTO:            enabled
+  Codegen Units:  1
+  Strip:          enabled
+  Panic:          abort
+  Target CPU:     native
+
+Test Results:
+  Status:         All tests passed
+  Test Command:   cargo test --release
+
+Verification:
+  Binary Test:    Passed
+  Version Check:  Passed
+
+Build Script:
+  Script:         scripts\build_release.bat
+  Clean Build:    false
+
+========================================
+Build completed successfully
+========================================

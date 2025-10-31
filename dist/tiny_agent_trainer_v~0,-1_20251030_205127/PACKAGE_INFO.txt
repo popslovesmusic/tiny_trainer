@@ -1,0 +1,24 @@
+========================================
+Package Information
+========================================
+
+Package Name: tiny_agent_trainer_v~0,-1_20251030_205127
+Version: ~0,-1
+Created: 20251030_205127
+
+Contents:
+  - Optimized binary (8 MB)
+  - Configuration files (3 files)
+  - Documentation (5 files)
+  - Build manifest
+  - Baseline performance report
+
+Verification:
+  Binary SHA256: d41a758fd3f34ac86e4ee6f33319721f140fda2fef110f1066f12298d4354d20 
+
+Installation:
+  1. Extract package
+  2. Add bin\ directory to PATH
+  3. Run: tiny-agent-trainer check
+
+========================================

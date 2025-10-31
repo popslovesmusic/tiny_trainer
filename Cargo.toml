@@ -1,0 +1,78 @@
+[package]
+name = "tiny_agent_trainer_rs"
+version = "2.0.0"
+edition = "2021"
+authors = ["Tiny Agent Trainer Team"]
+description = "A Rust framework for training AI models to generate WGSL shader code from natural language"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/yourusername/tiny_agent_trainer_rs"
+keywords = ["wgsl", "shader", "ai", "ml", "gpu"]
+categories = ["machine-learning", "graphics", "command-line-utilities"]
+
+[lib]
+name = "tiny_agent_trainer"
+path = "src/lib.rs"
+
+[[bin]]
+name = "tiny-agent-trainer"
+path = "src/main.rs"
+
+[dependencies]
+# Core tensor operations
+ndarray = { version = "0.15", features = ["rayon", "serde"] }
+ndarray-rand = "0.14"
+
+# GPU and WGSL support
+wgpu = "0.19"
+naga = { version = "0.19", features = ["wgsl-in"] }
+
+# ML framework
+# candle-core = "0.4"  # Temporarily disabled due to rand version conflicts
+# candle-nn = "0.4"    # We'll implement transformer manually for now
+
+# Parallelization
+rayon = "1.8"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+bincode = "1.3"
+
+# CLI
+clap = { version = "4.4", features = ["derive", "cargo"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+# Tokenization
+regex = "1.10"
+unicode-segmentation = "1.10"
+
+# Utilities
+anyhow = "1.0"
+thiserror = "1.0"
+rand = "0.8"
+rand_chacha = "0.3"
+
+[dev-dependencies]
+criterion = "0.5"
+proptest = "1.4"
+tempfile = "3.8"
+
+[profile.release]
+opt-level = 3           # Maximum optimization
+lto = true              # Link-Time Optimization
+codegen-units = 1       # Better optimization, slower compile
+strip = true            # Strip debug symbols
+panic = "abort"         # Smaller binary size
+overflow-checks = false # Slightly faster (use with caution)
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.bench]
+inherits = "release"

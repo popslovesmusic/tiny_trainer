@@ -1,0 +1,34 @@
+[task]
+name = "wgsl_generation"
+task_type = "code_generation"
+description = "Generate WGSL shader code from natural language"
+
+[model]
+architecture = "transformer"
+d_model = 512
+nhead = 8
+num_layers = 6
+dim_feedforward = 2048
+dropout = 0.10000000149011612
+max_seq_len = 512
+
+[training]
+num_epochs = 100
+batch_size = 16
+learning_rate = 0.0001
+optimizer = "adamw"
+early_stopping = true
+early_stopping_patience = 15
+gradient_clip_norm = 1.0
+save_every = 10
+
+[tokenizer]
+tokenizer_type = "wgsl"
+max_length = 512
+lowercase = false
+min_freq = 1
+
+[dataset]
+train_path = "config/wgsl_training_data.toml"
+train_ratio = 0.800000011920929
+val_ratio = 0.10000000149011612
