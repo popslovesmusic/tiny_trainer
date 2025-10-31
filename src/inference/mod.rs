@@ -18,7 +18,9 @@ impl WGSLGenerator {
     /// Load generator from checkpoint (placeholder)
     pub fn from_checkpoint(_path: &str) -> crate::Result<Self> {
         // TODO: Implement checkpoint loading
-        Err(crate::Error::Other("Checkpoint loading not yet implemented".to_string()))
+        Err(crate::Error::Other(
+            "Checkpoint loading not yet implemented".to_string(),
+        ))
     }
 
     /// Generate WGSL code from natural language description
@@ -61,7 +63,8 @@ mod tests {
 
     #[test]
     fn test_generator_creation() {
-        let model = CodeGenerationModel::new(ModelArchitecture::Transformer, 1000, 512, 8, 6);
+        let model =
+            CodeGenerationModel::new(ModelArchitecture::Transformer, 1000, 512, 8, 6, None, None);
         let tokenizer = WGSLTokenizer::new(512, false);
         let generator = WGSLGenerator::new(model, tokenizer);
 

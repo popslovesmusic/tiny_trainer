@@ -2,12 +2,14 @@
 //!
 //! Implements an encoder-decoder transformer tailored for WGSL token sequences.
 
+use crate::config::ModelConfig;
 use crate::tokenizer::SpecialToken;
 use ndarray::{s, Array1, Array2};
 use rand::{distributions::Uniform, rngs::StdRng, Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 
 const DEFAULT_MAX_SEQ_LEN: usize = 512;
+const DEFAULT_DIM_FEEDFORWARD: usize = 2048;
 
 /// Model architecture types
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,6 +27,7 @@ pub struct CodeGenerationModel {
     pub nhead: usize,
     pub num_layers: usize,
     pub max_seq_len: usize,
+    pub dim_feedforward: usize,
     transformer: Option<Transformer>,
 }
 
@@ -36,6 +39,8 @@ impl CodeGenerationModel {
         d_model: usize,
         nhead: usize,
         num_layers: usize,
+        dim_feedforward: Option<usize>,
+        max_seq_len: Option<usize>,
     ) -> Self {
         let transformer = match architecture {
             ModelArchitecture::Transformer => Some(Transformer::new(
@@ -43,7 +48,8 @@ impl CodeGenerationModel {
                 d_model,
                 nhead,
                 num_layers,
-                DEFAULT_MAX_SEQ_LEN,
+                max_seq_len.unwrap_or(DEFAULT_MAX_SEQ_LEN),
+                dim_feedforward.unwrap_or(DEFAULT_DIM_FEEDFORWARD),
             )),
             ModelArchitecture::LSTM => None,
         };
@@ -54,9 +60,36 @@ impl CodeGenerationModel {
             d_model,
             nhead,
             num_layers,
-            max_seq_len: DEFAULT_MAX_SEQ_LEN,
+            max_seq_len: max_seq_len.unwrap_or(DEFAULT_MAX_SEQ_LEN),
+            dim_feedforward: dim_feedforward.unwrap_or(DEFAULT_DIM_FEEDFORWARD),
             transformer,
         }
+    }
+
+    /// Create a model from a [`ModelConfig`], applying production defaults when
+    /// configuration values are absent.
+    pub fn from_model_config(vocab_size: usize, config: &ModelConfig) -> Self {
+        let architecture = match config.architecture.to_lowercase().as_str() {
+            "transformer" => ModelArchitecture::Transformer,
+            "lstm" => ModelArchitecture::LSTM,
+            other => {
+                tracing::warn!(
+                    "Unknown architecture '{}' in model config; defaulting to transformer",
+                    other
+                );
+                ModelArchitecture::Transformer
+            }
+        };
+
+        Self::new(
+            architecture,
+            vocab_size,
+            config.d_model,
+            config.nhead,
+            config.num_layers,
+            Some(config.dim_feedforward),
+            Some(config.max_seq_len),
+        )
     }
 
     /// Forward pass through the underlying model.
@@ -103,6 +136,7 @@ struct Transformer {
     nhead: usize,
     num_layers: usize,
     max_seq_len: usize,
+    dim_feedforward: usize,
     token_embedding: Array2<f32>,
     positional_encoding: Array2<f32>,
     encoder_layers: Vec<EncoderLayer>,
@@ -118,6 +152,7 @@ impl Transformer {
         nhead: usize,
         num_layers: usize,
         max_seq_len: usize,
+        dim_feedforward: usize,
     ) -> Self {
         assert!(d_model % nhead == 0, "d_model must be divisible by nhead");
 
@@ -131,8 +166,20 @@ impl Transformer {
         let mut decoder_layers = Vec::with_capacity(num_layers);
 
         for _ in 0..num_layers {
-            encoder_layers.push(EncoderLayer::new(d_model, nhead, &mut rng, dist));
-            decoder_layers.push(DecoderLayer::new(d_model, nhead, &mut rng, dist));
+            encoder_layers.push(EncoderLayer::new(
+                d_model,
+                nhead,
+                dim_feedforward,
+                &mut rng,
+                dist,
+            ));
+            decoder_layers.push(DecoderLayer::new(
+                d_model,
+                nhead,
+                dim_feedforward,
+                &mut rng,
+                dist,
+            ));
         }
 
         let final_linear_weight =
@@ -145,6 +192,7 @@ impl Transformer {
             nhead,
             num_layers,
             max_seq_len,
+            dim_feedforward,
             token_embedding,
             positional_encoding,
             encoder_layers,
@@ -290,11 +338,17 @@ struct EncoderLayer {
 }
 
 impl EncoderLayer {
-    fn new(d_model: usize, nhead: usize, rng: &mut StdRng, dist: Uniform<f32>) -> Self {
+    fn new(
+        d_model: usize,
+        nhead: usize,
+        dim_feedforward: usize,
+        rng: &mut StdRng,
+        dist: Uniform<f32>,
+    ) -> Self {
         Self {
             self_attn: MultiHeadAttention::new(d_model, nhead, rng, dist),
             norm1: LayerNorm::new(d_model),
-            feedforward: FeedForward::new(d_model, rng, dist),
+            feedforward: FeedForward::new(d_model, dim_feedforward, rng, dist),
             norm2: LayerNorm::new(d_model),
         }
     }
@@ -327,13 +381,19 @@ struct DecoderLayer {
 }
 
 impl DecoderLayer {
-    fn new(d_model: usize, nhead: usize, rng: &mut StdRng, dist: Uniform<f32>) -> Self {
+    fn new(
+        d_model: usize,
+        nhead: usize,
+        dim_feedforward: usize,
+        rng: &mut StdRng,
+        dist: Uniform<f32>,
+    ) -> Self {
         Self {
             self_attn: MultiHeadAttention::new(d_model, nhead, rng, dist),
             norm1: LayerNorm::new(d_model),
             cross_attn: MultiHeadAttention::new(d_model, nhead, rng, dist),
             norm2: LayerNorm::new(d_model),
-            feedforward: FeedForward::new(d_model, rng, dist),
+            feedforward: FeedForward::new(d_model, dim_feedforward, rng, dist),
             norm3: LayerNorm::new(d_model),
         }
     }
@@ -490,8 +550,7 @@ struct FeedForward {
 }
 
 impl FeedForward {
-    fn new(d_model: usize, rng: &mut StdRng, dist: Uniform<f32>) -> Self {
-        let hidden_dim = d_model * 4;
+    fn new(d_model: usize, hidden_dim: usize, rng: &mut StdRng, dist: Uniform<f32>) -> Self {
         Self {
             linear1: Linear::new(d_model, hidden_dim, rng, dist),
             linear2: Linear::new(hidden_dim, d_model, rng, dist),
@@ -625,19 +684,40 @@ fn softmax_vec(mut values: Vec<f32>) -> Vec<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::ModelConfig;
 
     #[test]
     fn test_model_creation() {
-        let model = CodeGenerationModel::new(ModelArchitecture::Transformer, 10000, 512, 8, 6);
+        let model =
+            CodeGenerationModel::new(ModelArchitecture::Transformer, 10000, 512, 8, 6, None, None);
         assert_eq!(model.vocab_size, 10000);
         assert!(model.num_parameters() > 0);
     }
 
     #[test]
     fn test_forward_shape() {
-        let model = CodeGenerationModel::new(ModelArchitecture::Transformer, 128, 512, 8, 2);
+        let model =
+            CodeGenerationModel::new(ModelArchitecture::Transformer, 128, 512, 8, 2, None, None);
         let input = vec![5, 6, 7, 8];
         let logits = model.forward(&input);
         assert_eq!(logits.len(), model.vocab_size);
+    }
+
+    #[test]
+    fn test_from_model_config() {
+        let config = ModelConfig {
+            architecture: "transformer".to_string(),
+            d_model: 512,
+            nhead: 8,
+            num_layers: 6,
+            dim_feedforward: 2048,
+            dropout: 0.1,
+            max_seq_len: 512,
+        };
+
+        let model = CodeGenerationModel::from_model_config(2048, &config);
+        assert_eq!(model.d_model, 512);
+        assert_eq!(model.dim_feedforward, 2048);
+        assert_eq!(model.max_seq_len, 512);
     }
 }
