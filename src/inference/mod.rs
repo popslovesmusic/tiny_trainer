@@ -61,7 +61,7 @@ mod tests {
 
     #[test]
     fn test_generator_creation() {
-        let model = CodeGenerationModel::new(ModelArchitecture::Transformer, 1000, 256, 4, 2);
+        let model = CodeGenerationModel::new(ModelArchitecture::Transformer, 1000, 512, 8, 6);
         let tokenizer = WGSLTokenizer::new(512, false);
         let generator = WGSLGenerator::new(model, tokenizer);
 
