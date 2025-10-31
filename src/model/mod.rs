@@ -12,6 +12,9 @@ use ndarray::{s, Array1, Array2};
 use rand::{distributions::Uniform, rngs::StdRng, Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 
+use decoder::DecoderLayer;
+use encoder::EncoderLayer;
+
 const DEFAULT_MAX_SEQ_LEN: usize = 512;
 const DEFAULT_DIM_FEEDFORWARD: usize = 2048;
 
@@ -334,240 +337,31 @@ impl Transformer {
 }
 
 #[derive(Debug, Clone)]
-struct EncoderLayer {
-    self_attn: MultiHeadAttention,
-    norm1: LayerNorm,
-    feedforward: FeedForward,
-    norm2: LayerNorm,
-}
-
-impl EncoderLayer {
-    fn new(
-        d_model: usize,
-        nhead: usize,
-        dim_feedforward: usize,
-        rng: &mut StdRng,
-        dist: Uniform<f32>,
-    ) -> Self {
-        Self {
-            self_attn: MultiHeadAttention::new(d_model, nhead, rng, dist),
-            norm1: LayerNorm::new(d_model),
-            feedforward: FeedForward::new(d_model, dim_feedforward, rng, dist),
-            norm2: LayerNorm::new(d_model),
-        }
-    }
-
-    fn forward(&self, x: &Array2<f32>, mask: Option<&Array2<f32>>) -> Array2<f32> {
-        let attn_output = self.self_attn.forward(x, x, x, mask);
-        let residual1 = x + &attn_output;
-        let normed1 = self.norm1.forward(&residual1);
-        let ff_output = self.feedforward.forward(&normed1);
-        let residual2 = normed1 + &ff_output;
-        self.norm2.forward(&residual2)
-    }
-
-    fn num_parameters(&self) -> usize {
-        self.self_attn.num_parameters()
-            + self.feedforward.num_parameters()
-            + self.norm1.num_parameters()
-            + self.norm2.num_parameters()
-    }
-}
-
-#[derive(Debug, Clone)]
-struct DecoderLayer {
-    self_attn: MultiHeadAttention,
-    norm1: LayerNorm,
-    cross_attn: MultiHeadAttention,
-    norm2: LayerNorm,
-    feedforward: FeedForward,
-    norm3: LayerNorm,
-}
-
-impl DecoderLayer {
-    fn new(
-        d_model: usize,
-        nhead: usize,
-        dim_feedforward: usize,
-        rng: &mut StdRng,
-        dist: Uniform<f32>,
-    ) -> Self {
-        Self {
-            self_attn: MultiHeadAttention::new(d_model, nhead, rng, dist),
-            norm1: LayerNorm::new(d_model),
-            cross_attn: MultiHeadAttention::new(d_model, nhead, rng, dist),
-            norm2: LayerNorm::new(d_model),
-            feedforward: FeedForward::new(d_model, dim_feedforward, rng, dist),
-            norm3: LayerNorm::new(d_model),
-        }
-    }
-
-    fn forward(
-        &self,
-        x: &Array2<f32>,
-        encoder_states: &Array2<f32>,
-        self_mask: Option<&Array2<f32>>,
-        cross_mask: Option<&Array2<f32>>,
-    ) -> Array2<f32> {
-        let self_attn = self.self_attn.forward(x, x, x, self_mask);
-        let residual1 = x + &self_attn;
-        let normed1 = self.norm1.forward(&residual1);
-
-        let cross_attn =
-            self.cross_attn
-                .forward(&normed1, encoder_states, encoder_states, cross_mask);
-        let residual2 = normed1 + &cross_attn;
-        let normed2 = self.norm2.forward(&residual2);
-
-        let ff_output = self.feedforward.forward(&normed2);
-        let residual3 = normed2 + &ff_output;
-        self.norm3.forward(&residual3)
-    }
-
-    fn num_parameters(&self) -> usize {
-        self.self_attn.num_parameters()
-            + self.cross_attn.num_parameters()
-            + self.feedforward.num_parameters()
-            + self.norm1.num_parameters()
-            + self.norm2.num_parameters()
-            + self.norm3.num_parameters()
-    }
-}
-
-#[derive(Debug, Clone)]
-struct MultiHeadAttention {
-    d_model: usize,
-    nhead: usize,
-    head_dim: usize,
-    w_q: Array2<f32>,
-    w_k: Array2<f32>,
-    w_v: Array2<f32>,
-    w_o: Array2<f32>,
-    b_q: Array1<f32>,
-    b_k: Array1<f32>,
-    b_v: Array1<f32>,
-    b_o: Array1<f32>,
-    scale: f32,
-}
-
-impl MultiHeadAttention {
-    fn new(d_model: usize, nhead: usize, rng: &mut StdRng, dist: Uniform<f32>) -> Self {
-        let head_dim = d_model / nhead;
-        let w_q = Array2::from_shape_fn((d_model, d_model), |_| rng.sample(dist));
-        let w_k = Array2::from_shape_fn((d_model, d_model), |_| rng.sample(dist));
-        let w_v = Array2::from_shape_fn((d_model, d_model), |_| rng.sample(dist));
-        let w_o = Array2::from_shape_fn((d_model, d_model), |_| rng.sample(dist));
-        let b_q = Array1::from_shape_fn(d_model, |_| rng.sample(dist));
-        let b_k = Array1::from_shape_fn(d_model, |_| rng.sample(dist));
-        let b_v = Array1::from_shape_fn(d_model, |_| rng.sample(dist));
-        let b_o = Array1::from_shape_fn(d_model, |_| rng.sample(dist));
-
-        Self {
-            d_model,
-            nhead,
-            head_dim,
-            w_q,
-            w_k,
-            w_v,
-            w_o,
-            b_q,
-            b_k,
-            b_v,
-            b_o,
-            scale: (head_dim as f32).sqrt(),
-        }
-    }
-
-    fn forward(
-        &self,
-        query: &Array2<f32>,
-        key: &Array2<f32>,
-        value: &Array2<f32>,
-        mask: Option<&Array2<f32>>,
-    ) -> Array2<f32> {
-        let query_proj = query.dot(&self.w_q) + &self.b_q;
-        let key_proj = key.dot(&self.w_k) + &self.b_k;
-        let value_proj = value.dot(&self.w_v) + &self.b_v;
-
-        let query_len = query_proj.nrows();
-        let key_len = key_proj.nrows();
-
-        let mut context = Array2::<f32>::zeros((query_len, self.d_model));
-
-        for head in 0..self.nhead {
-            let start = head * self.head_dim;
-            let end = start + self.head_dim;
-
-            let q_head = query_proj.slice(s![.., start..end]);
-            let k_head = key_proj.slice(s![.., start..end]);
-            let v_head = value_proj.slice(s![.., start..end]);
-
-            let mut weights = Array2::<f32>::zeros((query_len, key_len));
-            for i in 0..query_len {
-                let mut row = Vec::with_capacity(key_len);
-                for j in 0..key_len {
-                    let mut score = q_head.row(i).dot(&k_head.row(j));
-                    score /= self.scale.max(1e-6);
-                    if let Some(mask) = mask {
-                        score += mask[[i, j]];
-                    }
-                    row.push(score);
-                }
-                let softmax = softmax_vec(row);
-                for (j, value) in softmax.into_iter().enumerate() {
-                    weights[[i, j]] = value;
-                }
-            }
-
-            for i in 0..query_len {
-                for j in 0..key_len {
-                    let weight = weights[[i, j]];
-                    if weight == 0.0 {
-                        continue;
-                    }
-                    for d in 0..self.head_dim {
-                        context[[i, start + d]] += weight * v_head[[j, d]];
-                    }
-                }
-            }
-        }
-
-        context.dot(&self.w_o) + &self.b_o
-    }
-
-    fn num_parameters(&self) -> usize {
-        self.w_q.len()
-            + self.w_k.len()
-            + self.w_v.len()
-            + self.w_o.len()
-            + self.b_q.len()
-            + self.b_k.len()
-            + self.b_v.len()
-            + self.b_o.len()
-    }
-}
-
-#[derive(Debug, Clone)]
-struct FeedForward {
+pub(super) struct FeedForward {
     linear1: Linear,
     linear2: Linear,
 }
 
 impl FeedForward {
-    fn new(d_model: usize, hidden_dim: usize, rng: &mut StdRng, dist: Uniform<f32>) -> Self {
+    pub(super) fn new(
+        d_model: usize,
+        hidden_dim: usize,
+        rng: &mut StdRng,
+        dist: Uniform<f32>,
+    ) -> Self {
         Self {
             linear1: Linear::new(d_model, hidden_dim, rng, dist),
             linear2: Linear::new(hidden_dim, d_model, rng, dist),
         }
     }
 
-    fn forward(&self, x: &Array2<f32>) -> Array2<f32> {
+    pub(super) fn forward(&self, x: &Array2<f32>) -> Array2<f32> {
         let mut hidden = self.linear1.forward(x);
         hidden.mapv_inplace(|v| v.max(0.0));
         self.linear2.forward(&hidden)
     }
 
-    fn num_parameters(&self) -> usize {
+    pub(super) fn num_parameters(&self) -> usize {
         self.linear1.num_parameters() + self.linear2.num_parameters()
     }
 }
@@ -595,14 +389,14 @@ impl Linear {
 }
 
 #[derive(Debug, Clone)]
-struct LayerNorm {
+pub(super) struct LayerNorm {
     gamma: Array1<f32>,
     beta: Array1<f32>,
     eps: f32,
 }
 
 impl LayerNorm {
-    fn new(dim: usize) -> Self {
+    pub(super) fn new(dim: usize) -> Self {
         Self {
             gamma: Array1::ones(dim),
             beta: Array1::zeros(dim),
@@ -610,7 +404,7 @@ impl LayerNorm {
         }
     }
 
-    fn forward(&self, x: &Array2<f32>) -> Array2<f32> {
+    pub(super) fn forward(&self, x: &Array2<f32>) -> Array2<f32> {
         let mut output = x.clone();
         for mut row in output.rows_mut() {
             let len = row.len();
@@ -636,12 +430,12 @@ impl LayerNorm {
         output
     }
 
-    fn num_parameters(&self) -> usize {
+    pub(super) fn num_parameters(&self) -> usize {
         self.gamma.len() + self.beta.len()
     }
 }
 
-fn softmax_vec(mut values: Vec<f32>) -> Vec<f32> {
+pub(super) fn softmax_vec(mut values: Vec<f32>) -> Vec<f32> {
     if values.is_empty() {
         return values;
     }
